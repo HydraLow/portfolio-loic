@@ -1,0 +1,1025 @@
+<!DOCTYPE html>
+<html lang="fr" class="scroll-smooth">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Loïc Peiny | Portfolio</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;700&amp;family=Inter:wght@300;400;600&amp;display=swap"
+        rel="stylesheet">
+
+    <style>
+        :root {
+            --ln-yellow: #DFFF00;
+            /* Ta couleur signature */
+            --ln-dark: #0a0a0a;
+            --ln-gray: #1a1a1a;
+        }
+
+        /* Correction Largeur Page */
+        html,
+        body {
+            width: 100%;
+            max-width: 100vw;
+            overflow-x: hidden;
+            position: relative;
+            font-family: 'Inter', sans-serif;
+            background-color: var(--ln-dark);
+            color: white;
+        }
+
+        h1,
+        h2,
+        h3,
+        h4,
+        .display-font {
+            font-family: 'Space Grotesk', sans-serif;
+        }
+
+        .text-neon {
+            color: var(--ln-yellow);
+        }
+
+        .bg-neon {
+            background-color: var(--ln-yellow);
+        }
+
+        .border-neon {
+            border-color: var(--ln-yellow);
+        }
+
+        .custom-cursor {
+            width: 20px;
+            height: 20px;
+            border: 2px solid var(--ln-yellow);
+            border-radius: 50%;
+            position: fixed;
+            pointer-events: none;
+            z-index: 9999;
+            transform: translate(-50%, -50%);
+            transition: width 0.2s, height 0.2s, background-color 0.2s;
+            display: none;
+        }
+
+        @media (hover: hover) {
+            .custom-cursor {
+                display: block;
+            }
+        }
+
+        .custom-cursor.hovered {
+            width: 50px;
+            height: 50px;
+            background-color: rgba(223, 255, 0, 0.1);
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--ln-dark);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #333;
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--ln-yellow);
+        }
+
+        #canvas-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            opacity: 0.6;
+            overflow: hidden;
+        }
+
+        .stat-card {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(10px);
+            transition: transform 0.3s ease, border-color 0.3s ease;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+            border-color: var(--ln-yellow);
+        }
+
+        /* Loader */
+        #loader {
+            position: fixed;
+            inset: 0;
+            background: #000;
+            z-index: 10000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: opacity 0.5s ease;
+        }
+
+        .loader-bar {
+            width: 2px;
+            height: 0;
+            background: var(--ln-yellow);
+            animation: load 1s ease-in-out forwards;
+        }
+
+        @keyframes load {
+            0% {
+                height: 0;
+            }
+
+            100% {
+                height: 100px;
+            }
+        }
+
+        /* Reveal on Scroll */
+        .reveal {
+            opacity: 0;
+            transform: translateY(30px);
+            transition: all 0.8s ease;
+        }
+
+        .reveal.active {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* Mobile Menu */
+        .mobile-menu {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.95);
+            z-index: 999;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            transform: translateX(100%);
+            transition: transform 0.3s ease-in-out;
+            width: 100vw;
+        }
+
+        .mobile-menu.open {
+            transform: translateX(0);
+        }
+
+        /* 3D Cube Animation */
+        @keyframes spin-cube {
+            from {
+                transform: rotateX(0deg) rotateY(0deg);
+            }
+
+            to {
+                transform: rotateX(360deg) rotateY(360deg);
+            }
+        }
+
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+</head>
+
+<body class="antialiased">
+
+    <!-- Loader -->
+    <div id="loader">
+        <div class="flex gap-2 items-center">
+            <span class="text-white font-bold text-2xl display-font tracking-widest">LP</span>
+            <div class="loader-bar"></div>
+        </div>
+    </div>
+
+    <!-- Custom Cursor -->
+    <div class="custom-cursor" id="cursor"></div>
+
+    <!-- Navigation -->
+    <nav class="fixed w-full z-50 px-6 py-4 transition-all duration-300" id="navbar">
+        <div class="max-w-7xl mx-auto flex justify-between items-center">
+            <a href="#" class="text-3xl font-bold tracking-tighter display-font text-white z-50 relative group">
+                LP<span class="text-neon">.</span>
+            </a>
+
+            <!-- Desktop Menu -->
+            <div class="hidden md:flex space-x-12 items-center">
+                <a href="#home"
+                    class="nav-link text-sm font-medium tracking-widest hover:text-neon transition-colors uppercase">Accueil</a>
+                <a href="#about"
+                    class="nav-link text-sm font-medium tracking-widest hover:text-neon transition-colors uppercase">Compétences</a>
+                <a href="#gallery"
+                    class="nav-link text-sm font-medium tracking-widest hover:text-neon transition-colors uppercase">Projets</a>
+                <a href="#contact"
+                    class="nav-link text-sm font-medium tracking-widest hover:text-neon transition-colors uppercase">Contact</a>
+            </div>
+
+            <!-- Mobile Menu Button -->
+            <button id="menu-btn" class="md:hidden text-white focus:outline-none z-50 relative group">
+                <div class="relative w-8 h-8 flex items-center justify-center overflow-hidden">
+                    <i data-lucide="menu"
+                        class="w-8 h-8 absolute transition-all duration-300 transform group-[.active]:rotate-90 group-[.active]:opacity-0"
+                        id="icon-menu"></i>
+                    <i data-lucide="x"
+                        class="w-8 h-8 absolute transition-all duration-300 transform rotate-90 opacity-0 group-[.active]:rotate-0 group-[.active]:opacity-100"
+                        id="icon-close"></i>
+                </div>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Mobile Menu Overlay -->
+    <div class="mobile-menu" id="mobile-menu">
+        <a href="#home"
+            class="text-3xl font-bold uppercase mb-8 hover:text-neon transition-colors mobile-link">Accueil</a>
+        <a href="#about"
+            class="text-3xl font-bold uppercase mb-8 hover:text-neon transition-colors mobile-link">Compétences</a>
+        <a href="#gallery"
+            class="text-3xl font-bold uppercase mb-8 hover:text-neon transition-colors mobile-link">Projets</a>
+        <a href="#contact"
+            class="text-3xl font-bold uppercase mb-8 hover:text-neon transition-colors mobile-link">Contact</a>
+    </div>
+
+    <!-- Hero Section -->
+    <section id="home" class="relative h-screen flex items-center justify-center overflow-hidden w-full">
+        <div id="canvas-container"></div>
+
+        <div class="relative z-10 text-center px-4 reveal w-full max-w-screen-xl mx-auto">
+            <h2
+                class="text-neon text-sm md:text-xl tracking-[0.3em] md:tracking-[0.5em] mb-4 font-bold uppercase animate-pulse">
+                Monteur Vidéo & Streamer</h2>
+            <h1
+                class="text-5xl sm:text-7xl md:text-9xl font-bold uppercase tracking-tighter mb-6 leading-none display-font mix-blend-difference break-words">
+                Loïc <br /><span
+                    class="text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-600">Peiny</span>
+            </h1>
+
+            <div class="flex flex-col md:flex-row gap-6 justify-center mt-12 items-center">
+                <a href="#gallery"
+                    class="group relative px-8 py-4 bg-neon text-black font-bold uppercase tracking-wider overflow-hidden inline-block w-64 md:w-auto">
+                    <span class="relative z-10 group-hover:text-white transition-colors duration-300">Voir mes
+                        projets</span>
+                    <div
+                        class="absolute inset-0 bg-black transform scale-x-0 origin-left group-hover:scale-x-100 transition-transform duration-300 ease-out">
+                    </div>
+                </a>
+                <a href="#contact"
+                    class="group relative px-8 py-4 border border-white text-white font-bold uppercase tracking-wider hover:bg-white hover:text-black transition-all duration-300 inline-block w-64 md:w-auto">
+                    Me Contacter
+                </a>
+            </div>
+        </div>
+
+        <!-- Scroll Indicator -->
+        <div class="absolute bottom-10 left-1/2 transform -translate-x-1/2 animate-bounce">
+            <i data-lucide="chevron-down" class="text-neon w-8 h-8"></i>
+        </div>
+    </section>
+
+    <!-- Skills & About Section -->
+    <section id="about" class="py-24 bg-black relative z-20 w-full">
+        <div class="max-w-7xl mx-auto px-6">
+            <div class="flex flex-col md:flex-row justify-between items-end mb-16 border-b border-gray-800 pb-8 reveal">
+                <div>
+                    <h2 class="text-4xl md:text-7xl font-bold uppercase mb-2">Mes <span
+                            class="text-neon">Compétences</span></h2>
+                    <p class="text-gray-400 max-w-md">Expertise technique et créative.</p>
+                </div>
+                <div class="text-right mt-8 md:mt-0">
+                    <p class="text-4xl font-bold text-white">2025</p>
+                    <p class="text-neon uppercase tracking-widest text-sm">Portfolio</p>
+                </div>
+            </div>
+
+            <!-- Skills Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-16">
+                <!-- Premiere Pro -->
+                <div class="stat-card p-8 rounded-none reveal" style="transition-delay: 100ms;">
+                    <div class="text-neon mb-4 text-5xl"><i class="fas fa-film"></i></div>
+                    <h3 class="text-2xl font-bold mb-1">Premiere Pro</h3>
+                    <p class="text-gray-400 uppercase text-xs tracking-widest mt-2">Montage Avancé</p>
+                </div>
+
+                <!-- Illustrator (MODIFIÉ) -->
+                <div class="stat-card p-8 rounded-none reveal" style="transition-delay: 200ms;">
+                    <div class="text-neon mb-4 text-5xl"><i class="fas fa-pen-nib"></i></div>
+                    <h3 class="text-2xl font-bold mb-1">Illustrator</h3>
+                    <p class="text-gray-400 uppercase text-xs tracking-widest mt-2">Graphisme Vectoriel</p>
+                </div>
+
+                <!-- OBS / Streaming -->
+                <div class="stat-card p-8 rounded-none reveal" style="transition-delay: 300ms;">
+                    <div class="text-neon mb-4 text-5xl"><i class="fas fa-video"></i></div>
+                    <h3 class="text-2xl font-bold mb-1">OBS Studio</h3>
+                    <p class="text-gray-400 uppercase text-xs tracking-widest mt-2">Streaming & Regie</p>
+                </div>
+                <!-- Photoshop -->
+                <div class="stat-card p-8 rounded-none reveal" style="transition-delay: 400ms;">
+                    <div class="text-neon mb-4 text-5xl"><i class="fas fa-image"></i></div>
+                    <h3 class="text-2xl font-bold mb-1">Photoshop</h3>
+                    <p class="text-gray-400 uppercase text-xs tracking-widest mt-2">Miniatures</p>
+                </div>
+            </div>
+
+            <!-- About Text Section -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 reveal">
+                <div class="bg-[#111] p-8 border border-gray-800 flex flex-col justify-center">
+                    <h3 class="text-3xl font-bold mb-6 uppercase tracking-wider flex items-center">
+                        <span class="w-2 h-2 bg-neon mr-3 block"></span> À Propos de Moi
+                    </h3>
+                    <p class="text-gray-300 text-lg leading-relaxed mb-6">
+                        Passionné par l'audiovisuel et les médias numériques, je crée des contenus visuels captivants à
+                        travers le montage vidéo, la production audiovisuelle et le streaming.
+                    </p>
+                    <ul class="space-y-3">
+                        <li class="flex items-center text-gray-400">
+                            <i data-lucide="check-circle" class="text-neon w-5 h-5 mr-3"></i> Formation en Production
+                            Audiovisuelle
+                        </li>
+                        <li class="flex items-center text-gray-400">
+                            <i data-lucide="check-circle" class="text-neon w-5 h-5 mr-3"></i> Créativité et Rythme
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="bg-[#111] p-8 border border-gray-800 relative overflow-hidden group">
+                    <div class="absolute top-0 right-0 w-32 h-32 bg-neon opacity-10 rounded-full blur-3xl"></div>
+                    <h3 class="text-3xl font-bold mb-6 uppercase tracking-wider flex items-center relative z-10">
+                        <span class="w-2 h-2 bg-neon mr-3 block"></span> Vision
+                    </h3>
+                    <p class="text-gray-300 text-lg leading-relaxed mb-8 relative z-10">
+                        Mon objectif est de transformer des idées brutes en récits visuels percutants. Que ce soit pour
+                        du contenu YouTube, des streams Twitch ou des projets créatifs.
+                    </p>
+                    <div class="flex items-center gap-4 relative z-10">
+                        <div class="h-1 w-12 bg-neon"></div>
+                        <span class="uppercase tracking-widest text-sm font-bold text-white">Créateur de Contenu</span>
+                    </div>
+                    <!-- Abstract Lines Decoration -->
+                    <div class="absolute bottom-0 right-0 w-full h-full opacity-20 pointer-events-none">
+                        <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+                            <line x1="0" y1="100%" x2="100%" y2="0" stroke="#DFFF00" stroke-width="1" />
+                            <line x1="20%" y1="100%" x2="100%" y2="20%" stroke="#DFFF00" stroke-width="1" />
+                            <line x1="40%" y1="100%" x2="100%" y2="40%" stroke="#DFFF00" stroke-width="1" />
+                        </svg>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Image Gallery / Projects -->
+    <section id="gallery" class="py-24 bg-[#0a0a0a] overflow-hidden relative z-20 w-full">
+        <div class="max-w-7xl mx-auto px-6 mb-16 reveal">
+            <h2 class="text-4xl md:text-7xl font-bold uppercase">Mes <span class="text-neon">Projets</span></h2>
+            <p class="text-gray-400 mt-4">Découvrez mes réalisations audiovisuelles et académiques.</p>
+        </div>
+
+        <!-- SECTION "CORNALINE" : PROJET MAJEUR -->
+        <div class="max-w-7xl mx-auto px-6 mb-24 reveal">
+            <div class="bg-[#111] border border-gray-800 p-6 md:p-12 relative overflow-hidden group shadow-2xl">
+                <!-- Background Glow Effect -->
+                <div
+                    class="absolute top-0 right-0 w-64 h-64 bg-neon opacity-5 rounded-full blur-[100px] group-hover:opacity-10 transition-opacity duration-500">
+                </div>
+
+                <div class="flex flex-col lg:flex-row gap-12 items-center relative z-10">
+                    <!-- Image Projet -->
+                    <div class="w-full lg:w-1/2 overflow-hidden rounded-lg border border-gray-800">
+                        <!-- IMAGE REMISE VIA DISCORD (Celle qui marchait) -->
+                        <img src="https://media.discordapp.net/attachments/1441143762335043614/1441549229234454699/54D91133-D8EF-4871-9F40-C77E928F8431.png?ex=692232d6&is=6920e156&hm=5f1f9eb2901f4da5b1383e421864ba56d8f51e9d812d9f4f44d883f78840967d&=&format=png&quality=lossless&width=1601&height=856"
+                            alt="Projet Cornaline - Bière Artisanale"
+                            class="w-full h-auto object-cover transform group-hover:scale-105 transition-transform duration-700">
+                    </div>
+
+                    <!-- Infos Projet -->
+                    <div class="w-full lg:w-1/2">
+                        <div class="flex items-center gap-3 mb-4">
+                            <span
+                                class="bg-neon text-black font-bold text-xs px-3 py-1 uppercase tracking-widest rounded-full">Projet
+                                Majeur</span>
+                            <span class="text-gray-500 text-sm font-bold uppercase tracking-widest">BUT 1 MMI</span>
+                        </div>
+
+                        <h3 class="text-4xl md:text-5xl font-bold mb-4 text-white">Cornaline</h3>
+                        <p class="text-gray-300 text-lg leading-relaxed mb-6">
+                            Création complète d'une marque de bière sur 8 mois. De l'élaboration de la stratégie
+                            marketing à la réalisation du site web, en passant par l'identité visuelle et la production
+                            audiovisuelle.
+                        </p>
+
+                        <div class="flex flex-wrap gap-2 mb-8">
+                            <span
+                                class="px-3 py-1 border border-gray-700 rounded-full text-xs text-gray-400 uppercase">Dev
+                                Web</span>
+                            <span
+                                class="px-3 py-1 border border-gray-700 rounded-full text-xs text-gray-400 uppercase">Marketing</span>
+                            <span
+                                class="px-3 py-1 border border-gray-700 rounded-full text-xs text-gray-400 uppercase">Design
+                                Graphique</span>
+                            <span
+                                class="px-3 py-1 border border-gray-700 rounded-full text-xs text-gray-400 uppercase">Vidéo</span>
+                        </div>
+
+                        <div class="flex flex-col sm:flex-row gap-4">
+                            <a href="https://cornaline.2025.mmibut1.org/?route=age-verification" target="_blank"
+                                class="inline-flex items-center justify-center px-6 py-3 bg-neon text-black font-bold uppercase tracking-wider hover:bg-white transition-colors">
+                                <i class="fas fa-globe mr-2"></i> Voir le site
+                            </a>
+                            <a href="https://www.instagram.com/cornaline_bieres/?igsh=MTE4bjAzdG40Y3VhOA%3D%3D#"
+                                target="_blank"
+                                class="inline-flex items-center justify-center px-6 py-3 border border-gray-600 text-white font-bold uppercase tracking-wider hover:border-neon hover:text-neon transition-colors">
+                                <i class="fab fa-instagram mr-2"></i> Instagram
+                            </a>
+                        </div>
+
+                        <div class="mt-6">
+                            <a href="photo_video/CRÉATION IDENTITÉ VISUELLE_Cornaline.pdf" target="_blank"
+                                class="inline-flex items-center text-sm font-bold uppercase tracking-widest text-gray-400 hover:text-white transition-colors">
+                                <i class="fas fa-file-pdf mr-2 text-neon"></i> Voir la Charte Graphique (PDF)
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- FIN SECTION CORNALINE -->
+
+        <!-- Grille des Vidéos -->
+        <div class="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-8 px-6 reveal">
+
+            <!-- NOUVEAU : Video Arènes d'Evry -->
+            <a href="https://youtu.be/7b7qA5h_ayM" target="_blank"
+                class="w-full h-[400px] bg-gray-800 relative group overflow-hidden cursor-pointer block border border-gray-800 hover:border-neon transition-colors">
+                <img src="https://img.youtube.com/vi/7b7qA5h_ayM/hqdefault.jpg" alt="Les Arènes d'Evry"
+                    class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 opacity-70 group-hover:opacity-100">
+                <div class="absolute inset-0 flex items-center justify-center z-10">
+                    <div
+                        class="bg-neon rounded-full p-4 opacity-0 group-hover:opacity-100 transition-all duration-300 transform scale-50 group-hover:scale-100">
+                        <i class="fas fa-play text-black text-xl ml-1"></i>
+                    </div>
+                </div>
+                <div
+                    class="absolute bottom-0 left-0 p-6 bg-gradient-to-t from-black via-black/80 to-transparent w-full">
+                    <p class="text-neon font-bold text-lg">Les Arènes d'Evry</p>
+                    <p class="text-white text-sm">Montage Créatif</p>
+                </div>
+            </a>
+
+            <!-- NOUVEAU : Video Bilan PPP -->
+            <a href="https://youtu.be/yaWuW1aQZeA" target="_blank"
+                class="w-full h-[400px] bg-gray-800 relative group overflow-hidden cursor-pointer block border border-gray-800 hover:border-neon transition-colors">
+                <img src="https://img.youtube.com/vi/yaWuW1aQZeA/hqdefault.jpg" alt="Bilan PPP"
+                    class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 opacity-70 group-hover:opacity-100">
+                <div class="absolute inset-0 flex items-center justify-center z-10">
+                    <div
+                        class="bg-neon rounded-full p-4 opacity-0 group-hover:opacity-100 transition-all duration-300 transform scale-50 group-hover:scale-100">
+                        <i class="fas fa-play text-black text-xl ml-1"></i>
+                    </div>
+                </div>
+                <div
+                    class="absolute bottom-0 left-0 p-6 bg-gradient-to-t from-black via-black/80 to-transparent w-full">
+                    <p class="text-neon font-bold text-lg">Bilan PPP</p>
+                    <p class="text-white text-sm">Présentation Académique</p>
+                </div>
+            </a>
+
+            <!-- Video 1 (hqdefault) -->
+            <a href="https://www.youtube.com/watch?v=pfUtOySPC4g" target="_blank"
+                class="w-full h-[400px] bg-gray-800 relative group overflow-hidden cursor-pointer block border border-gray-800 hover:border-neon transition-colors">
+                <img src="https://img.youtube.com/vi/pfUtOySPC4g/hqdefault.jpg" alt="Projet Audiovisuel 1"
+                    class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 opacity-70 group-hover:opacity-100">
+                <div class="absolute inset-0 flex items-center justify-center z-10">
+                    <div
+                        class="bg-neon rounded-full p-4 opacity-0 group-hover:opacity-100 transition-all duration-300 transform scale-50 group-hover:scale-100">
+                        <i class="fas fa-play text-black text-xl ml-1"></i>
+                    </div>
+                </div>
+                <div
+                    class="absolute bottom-0 left-0 p-6 bg-gradient-to-t from-black via-black/80 to-transparent w-full">
+                    <p class="text-neon font-bold text-lg">Projet Vidéo 01</p>
+                    <p class="text-white text-sm">Réalisation Audiovisuelle</p>
+                </div>
+            </a>
+
+            <!-- Video 2 (hqdefault) -->
+            <a href="https://www.youtube.com/watch?v=UFnsJs0ptSo" target="_blank"
+                class="w-full h-[400px] bg-gray-800 relative group overflow-hidden cursor-pointer block border border-gray-800 hover:border-neon transition-colors">
+                <img src="https://img.youtube.com/vi/UFnsJs0ptSo/hqdefault.jpg" alt="Projet Audiovisuel 2"
+                    class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 opacity-70 group-hover:opacity-100">
+                <div class="absolute inset-0 flex items-center justify-center z-10">
+                    <div
+                        class="bg-neon rounded-full p-4 opacity-0 group-hover:opacity-100 transition-all duration-300 transform scale-50 group-hover:scale-100">
+                        <i class="fas fa-play text-black text-xl ml-1"></i>
+                    </div>
+                </div>
+                <div
+                    class="absolute bottom-0 left-0 p-6 bg-gradient-to-t from-black via-black/80 to-transparent w-full">
+                    <p class="text-neon font-bold text-lg">Projet Vidéo 02</p>
+                    <p class="text-white text-sm">Montage & Effets</p>
+                </div>
+            </a>
+
+            <!-- Video 3 -->
+            <a href="https://www.youtube.com/watch?v=NumiXU15QMQ" target="_blank"
+                class="w-full h-[400px] bg-gray-800 relative group overflow-hidden cursor-pointer block border border-gray-800 hover:border-neon transition-colors">
+                <img src="https://img.youtube.com/vi/NumiXU15QMQ/maxresdefault.jpg" alt="Projet Audiovisuel 3"
+                    class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 opacity-70 group-hover:opacity-100">
+                <div class="absolute inset-0 flex items-center justify-center z-10">
+                    <div
+                        class="bg-neon rounded-full p-4 opacity-0 group-hover:opacity-100 transition-all duration-300 transform scale-50 group-hover:scale-100">
+                        <i class="fas fa-play text-black text-xl ml-1"></i>
+                    </div>
+                </div>
+                <div
+                    class="absolute bottom-0 left-0 p-6 bg-gradient-to-t from-black via-black/80 to-transparent w-full">
+                    <p class="text-neon font-bold text-lg">Projet Vidéo 03</p>
+                    <p class="text-white text-sm">Production</p>
+                </div>
+            </a>
+
+            <!-- Video 4 -->
+            <a href="https://www.youtube.com/watch?v=jZAvRml0YLg" target="_blank"
+                class="w-full h-[400px] bg-gray-800 relative group overflow-hidden cursor-pointer block border border-gray-800 hover:border-neon transition-colors">
+                <img src="https://img.youtube.com/vi/jZAvRml0YLg/maxresdefault.jpg" alt="Projet Audiovisuel 4"
+                    class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 opacity-70 group-hover:opacity-100">
+                <div class="absolute inset-0 flex items-center justify-center z-10">
+                    <div
+                        class="bg-neon rounded-full p-4 opacity-0 group-hover:opacity-100 transition-all duration-300 transform scale-50 group-hover:scale-100">
+                        <i class="fas fa-play text-black text-xl ml-1"></i>
+                    </div>
+                </div>
+                <div
+                    class="absolute bottom-0 left-0 p-6 bg-gradient-to-t from-black via-black/80 to-transparent w-full">
+                    <p class="text-neon font-bold text-lg">Projet Vidéo 04</p>
+                    <p class="text-white text-sm">Création de Contenu</p>
+                </div>
+            </a>
+        </div>
+    </section>
+
+    <!-- Drone Photography Section -->
+    <section id="drone" class="py-24 bg-[#0a0a0a] relative z-20 w-full border-t border-gray-900">
+        <div class="max-w-7xl mx-auto px-6 mb-16 reveal">
+            <h2 class="text-4xl md:text-7xl font-bold uppercase">Photographie <span class="text-neon">Aérienne</span>
+            </h2>
+            <p class="text-gray-400 mt-4">La terre vue du ciel. Clichés et vidéos capturés par drone.</p>
+        </div>
+
+        <div class="max-w-7xl mx-auto px-6 reveal">
+            <!-- Photos Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
+                <!-- Photo 1 -->
+                <div
+                    class="group relative overflow-hidden aspect-[4/3] border border-gray-800 hover:border-neon transition-colors cursor-pointer">
+                    <img src="photo_video/d_photoville.JPG" alt="Vue Ville Drone"
+                        class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 opacity-70 group-hover:opacity-100">
+                    <div
+                        class="absolute inset-0 bg-gradient-to-t from-black/90 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-6">
+                        <p class="text-neon font-bold text-lg uppercase tracking-wider">Urbanisme</p>
+                        <p class="text-white text-xs uppercase tracking-widest">Vue Aérienne</p>
+                    </div>
+                </div>
+
+                <!-- Photo 2 -->
+                <div
+                    class="group relative overflow-hidden aspect-[4/3] border border-gray-800 hover:border-neon transition-colors cursor-pointer">
+                    <img src="photo_video/d_photo_village.JPG" alt="Vue Village Drone"
+                        class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 opacity-70 group-hover:opacity-100">
+                    <div
+                        class="absolute inset-0 bg-gradient-to-t from-black/90 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-6">
+                        <p class="text-neon font-bold text-lg uppercase tracking-wider">Ruralité</p>
+                        <p class="text-white text-xs uppercase tracking-widest">Vue Aérienne</p>
+                    </div>
+                </div>
+
+                <!-- Photo 3 -->
+                <div
+                    class="group relative overflow-hidden aspect-[4/3] border border-gray-800 hover:border-neon transition-colors cursor-pointer">
+                    <img src="photo_video/d_lutte_anti_harcelement_college.JPG" alt="Lutte Anti-Harcèlement"
+                        class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 opacity-70 group-hover:opacity-100">
+                    <div
+                        class="absolute inset-0 bg-gradient-to-t from-black/90 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-6">
+                        <p class="text-neon font-bold text-lg uppercase tracking-wider">Événement</p>
+                        <p class="text-white text-xs uppercase tracking-widest">Collège</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Videos Grid -->
+            <h3 class="text-2xl font-bold uppercase mb-8 border-l-4 border-neon pl-4">Vidéos Drone</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <!-- Video 1: Drone Mode Fusée -->
+                <div
+                    class="w-full bg-gray-800 relative group overflow-hidden border border-gray-800 hover:border-neon transition-colors">
+                    <video controls
+                        class="w-full h-[300px] object-cover opacity-80 group-hover:opacity-100 transition-opacity">
+                        <source src="photo_video/d_video_mode_fusée.MP4" type="video/mp4">
+                        Votre navigateur ne supporte pas la lecture de vidéos.
+                    </video>
+                    <div class="p-6 bg-[#0f0f0f] w-full border-t border-gray-800">
+                        <p class="text-neon font-bold text-lg">Mode Fusée</p>
+                        <p class="text-white text-sm">Action & Vitesse</p>
+                    </div>
+                </div>
+
+                <!-- Video 2: Drone Vue Éloignée -->
+                <div
+                    class="w-full bg-gray-800 relative group overflow-hidden border border-gray-800 hover:border-neon transition-colors">
+                    <video controls
+                        class="w-full h-[300px] object-cover opacity-80 group-hover:opacity-100 transition-opacity">
+                        <source src="photo_video/d_video_eloigne.MP4" type="video/mp4">
+                        Votre navigateur ne supporte pas la lecture de vidéos.
+                    </video>
+                    <div class="p-6 bg-[#0f0f0f] w-full border-t border-gray-800">
+                        <p class="text-neon font-bold text-lg">Vue Panoramique</p>
+                        <p class="text-white text-sm">Cinématique</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Section Graphisme -->
+    <section id="graphisme" class="py-24 bg-[#0a0a0a] relative z-20 w-full border-t border-gray-900">
+        <div class="max-w-7xl mx-auto px-6 mb-16 reveal">
+            <h2 class="text-4xl md:text-7xl font-bold uppercase">Design <span class="text-neon">Graphique</span></h2>
+            <p class="text-gray-400 mt-4">Créations visuelles et identités numériques.</p>
+        </div>
+
+        <div class="max-w-7xl mx-auto px-6 reveal">
+            <div
+                class="flex flex-col md:flex-row items-center gap-12 bg-[#111] p-8 border border-gray-800 relative overflow-hidden group">
+                <!-- Image -->
+                <div class="w-full md:w-1/3 relative">
+                    <div
+                        class="aspect-square overflow-hidden rounded-full border-4 border-neon shadow-[0_0_30px_rgba(223,255,0,0.3)]">
+                        <img src="photo_video/photodepr.png" alt="Photo de Profil Graphique"
+                            class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110">
+                    </div>
+                </div>
+
+                <!-- Description -->
+                <div class="w-full md:w-2/3">
+                    <h3 class="text-3xl font-bold text-white mb-4 uppercase">Identité Numérique</h3>
+                    <div class="h-1 w-20 bg-neon mb-6"></div>
+                    <p class="text-gray-300 text-lg leading-relaxed mb-6">
+                        Conception d'une photo de profil stylisée pour mes réseaux sociaux.
+                        Travail sur les ombres, les effets de lumière et l'intégration d'éléments graphiques pour
+                        refléter mon univers créatif.
+                    </p>
+                    <ul class="space-y-2 text-gray-400">
+                        <li><i class="fas fa-check text-neon mr-2"></i> Retouche Photo Avancée</li>
+                        <li><i class="fas fa-check text-neon mr-2"></i> Composition Visuelle</li>
+                        <li><i class="fas fa-check text-neon mr-2"></i> Branding Personnel</li>
+                    </ul>
+                </div>
+
+                <!-- Background decoration -->
+                <div
+                    class="absolute -right-20 -bottom-20 w-64 h-64 bg-neon opacity-5 rounded-full blur-3xl pointer-events-none">
+                </div>
+            </div>
+
+            <!-- Separator -->
+            <div class="my-12 border-t border-gray-800"></div>
+
+            <!-- Block Chartes Graphiques -->
+            <div
+                class="bg-[#111] p-8 border border-gray-800 relative overflow-hidden group hover:border-neon transition-colors">
+                <div class="flex flex-col md:flex-row items-center justify-between gap-8 relative z-10">
+                    <div>
+                        <h3 class="text-2xl font-bold text-white mb-2 uppercase flex items-center">
+                            <i class="fas fa-swatchbook text-neon mr-3"></i> Chartes Graphiques
+                        </h3>
+                        <p class="text-gray-400 max-w-2xl">
+                            Consultez mes dossiers de conception graphique et d'identité de marque.
+                        </p>
+                    </div>
+
+                    <div class="flex flex-col gap-3">
+                        <a href="photo_video/SAE chartre graphique .pdf" target="_blank"
+                            class="shrink-0 inline-flex items-center justify-center px-6 py-3 bg-white text-black font-bold uppercase tracking-wider hover:bg-neon transition-colors text-xs md:text-sm">
+                            <i class="fas fa-eye mr-2"></i> Charte SAE
+                        </a>
+                        <a href="photo_video/Créa1_PEINY_Loic_Création_de_marque_SAE_S3.pdf" target="_blank"
+                            class="shrink-0 inline-flex items-center justify-center px-6 py-3 border border-white text-white font-bold uppercase tracking-wider hover:bg-white hover:text-black transition-colors text-xs md:text-sm">
+                            <i class="fas fa-file-pdf mr-2"></i> Création de Marque
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Abstract BG -->
+                <div class="absolute top-0 right-0 w-full h-full opacity-5 pointer-events-none">
+                    <i class="fas fa-file-pdf text-9xl absolute -right-4 -bottom-4 transform rotate-12"></i>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Contact / CV Section -->
+    <section id="contact" class="py-24 bg-neon text-black relative z-20 w-full">
+        <div class="max-w-7xl mx-auto px-6 flex flex-col md:flex-row items-center justify-between">
+            <div class="md:w-1/2 mb-16 md:mb-0 reveal">
+                <h2 class="text-4xl sm:text-6xl md:text-8xl font-bold uppercase mb-6 leading-none break-words">Restons
+                    <br />Connectés
+                </h2>
+                <p class="text-xl font-medium mb-8 max-w-md">Vous avez un projet en tête ? N'hésitez pas à me contacter
+                    ou à télécharger mon CV pour en savoir plus.</p>
+
+                <div class="flex flex-col sm:flex-row gap-4">
+                    <a href="#"
+                        class="inline-flex items-center justify-center px-8 py-4 bg-black text-white font-bold uppercase tracking-wider hover:bg-gray-900 transition-colors">
+                        <i data-lucide="download" class="w-5 h-5 mr-2"></i> Télécharger CV
+                    </a>
+                    <a href="mailto:loicpeiny85@gmail.com"
+                        class="inline-flex items-center justify-center px-8 py-4 border-2 border-black text-black font-bold uppercase tracking-wider hover:bg-black hover:text-white transition-colors">
+                        M'envoyer un mail
+                    </a>
+                </div>
+
+                <div class="mt-10 break-all">
+                    <p class="font-bold uppercase tracking-wider mb-2">Discord:</p>
+                    <p class="text-xl md:text-2xl font-black">hydralow_</p>
+
+                    <p class="font-bold uppercase tracking-wider mb-2 mt-4">Email:</p>
+                    <p class="text-xl md:text-2xl font-black">loicpeiny85@gmail.com</p>
+                </div>
+            </div>
+
+            <div class="md:w-1/2 flex justify-center relative perspective-1000 reveal w-full">
+                <!-- CSS 3D Cube representation -->
+                <div class="relative w-64 h-64 perspective-1000 group">
+                    <div class="w-full h-full relative preserve-3d"
+                        style="transform-style: preserve-3d; animation: spin-cube 10s infinite linear;">
+                        <div class="absolute w-64 h-64 bg-black border-4 border-white flex items-center justify-center text-white font-bold text-2xl opacity-90"
+                            style="transform: translateZ(32px);">LOÏC</div>
+                        <div class="absolute w-64 h-64 bg-white border-4 border-black flex items-center justify-center text-black font-bold text-2xl opacity-90"
+                            style="transform: rotateY(90deg) translateZ(32px);">CV</div>
+                        <div class="absolute w-64 h-64 bg-black border-4 border-white flex items-center justify-center text-white font-bold text-2xl opacity-90"
+                            style="transform: rotateY(180deg) translateZ(32px);">PEINY</div>
+                        <div class="absolute w-64 h-64 bg-white border-4 border-black flex items-center justify-center text-black font-bold text-2xl opacity-90"
+                            style="transform: rotateY(-90deg) translateZ(32px);">VIDEO</div>
+                        <!-- Top/Bottom caps for cube illusion -->
+                        <div class="absolute w-64 h-64 bg-gray-800 border-4 border-white flex items-center justify-center opacity-90"
+                            style="transform: rotateX(90deg) translateZ(32px);"></div>
+                        <div class="absolute w-64 h-64 bg-gray-800 border-4 border-white flex items-center justify-center opacity-90"
+                            style="transform: rotateX(-90deg) translateZ(32px);"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-black text-white py-16 border-t border-gray-900 relative z-20 w-full">
+        <div class="max-w-7xl mx-auto px-6">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-12 mb-16">
+                <div class="col-span-1 md:col-span-2">
+                    <h2 class="text-4xl font-bold uppercase mb-6">Loïc Peiny</h2>
+                    <p class="text-gray-400 max-w-xs">Création de contenu, montage vidéo et streaming. Donnons vie à vos
+                        projets.</p>
+                </div>
+                <div>
+                    <h3 class="text-neon uppercase font-bold tracking-widest mb-6 text-sm">Navigation</h3>
+                    <ul class="space-y-4 text-gray-400">
+                        <li><a href="#" class="hover:text-white transition-colors">Accueil</a></li>
+                        <li><a href="#about" class="hover:text-white transition-colors">Compétences</a></li>
+                        <li><a href="#gallery" class="hover:text-white transition-colors">Projets</a></li>
+                        <li><a href="#contact" class="hover:text-white transition-colors">Contact</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h3 class="text-neon uppercase font-bold tracking-widest mb-6 text-sm">Réseaux</h3>
+                    <div class="flex space-x-4">
+                        <!-- LIEN YOUTUBE -->
+                        <a href="https://www.youtube.com/@hydralow" target="_blank"
+                            class="p-2 border border-gray-800 hover:border-neon hover:text-neon transition-colors"><i
+                                data-lucide="youtube"></i></a>
+                        <!-- LIEN TWITCH -->
+                        <a href="https://www.twitch.tv/hydralow" target="_blank"
+                            class="p-2 border border-gray-800 hover:border-neon hover:text-neon transition-colors"><i
+                                data-lucide="twitch"></i></a>
+                    </div>
+                </div>
+            </div>
+            <div
+                class="pt-8 border-t border-gray-900 flex flex-col md:flex-row justify-between items-center text-sm text-gray-600">
+                <p>&copy; 2025 Loïc Peiny. Tous droits réservés.</p>
+                <p class="mt-2 md:mt-0">Portfolio Design.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- JavaScript Functionality -->
+    <script>
+        // Initialize Lucide Icons
+        lucide.createIcons();
+
+        // Loader logic
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                const loader = document.getElementById('loader');
+                if (loader) {
+                    loader.style.opacity = '0';
+                    setTimeout(() => {
+                        loader.style.display = 'none';
+                    }, 500);
+                }
+            }, 1000);
+        });
+
+        // Mobile Menu Logic
+        const menuBtn = document.getElementById('menu-btn');
+        const mobileMenu = document.getElementById('mobile-menu');
+        const mobileLinks = document.querySelectorAll('.mobile-link');
+
+        let isMenuOpen = false;
+
+        if (menuBtn) {
+            menuBtn.addEventListener('click', () => {
+                isMenuOpen = !isMenuOpen;
+                if (isMenuOpen) {
+                    mobileMenu.classList.add('open');
+                    menuBtn.classList.add('active');
+                } else {
+                    mobileMenu.classList.remove('open');
+                    menuBtn.classList.remove('active');
+                }
+            });
+        }
+
+        mobileLinks.forEach(link => {
+            link.addEventListener('click', () => {
+                isMenuOpen = false;
+                mobileMenu.classList.remove('open');
+                menuBtn.classList.remove('active');
+            });
+        });
+
+        // Custom Cursor Logic
+        const cursor = document.getElementById('cursor');
+        document.addEventListener('mousemove', (e) => {
+            if (cursor) {
+                cursor.style.left = e.clientX + 'px';
+                cursor.style.top = e.clientY + 'px';
+            }
+        });
+
+        document.querySelectorAll('a, button').forEach(el => {
+            el.addEventListener('mouseenter', () => {
+                if (cursor) cursor.classList.add('hovered');
+            });
+            el.addEventListener('mouseleave', () => {
+                if (cursor) cursor.classList.remove('hovered');
+            });
+        });
+
+        // Scroll Reveal Logic
+        const revealElements = document.querySelectorAll('.reveal');
+
+        const revealOnScroll = () => {
+            const windowHeight = window.innerHeight;
+            const elementVisible = 150;
+
+            revealElements.forEach((reveal) => {
+                const elementTop = reveal.getBoundingClientRect().top;
+                if (elementTop < windowHeight - elementVisible) {
+                    reveal.classList.add('active');
+                }
+            });
+        };
+
+        window.addEventListener('scroll', revealOnScroll);
+        revealOnScroll(); // Trigger once on load
+
+        // Three.js 3D Background
+        const initThreeJS = () => {
+            const container = document.getElementById('canvas-container');
+            if (!container) return;
+
+            const scene = new THREE.Scene();
+            const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            container.appendChild(renderer.domElement);
+
+            // Create particles
+            const geometry = new THREE.BufferGeometry();
+            const count = 1500;
+            const positions = new Float32Array(count * 3);
+
+            for (let i = 0; i < count * 3; i++) {
+                positions[i] = (Math.random() - 0.5) * 25;
+            }
+
+            geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+
+            const material = new THREE.PointsMaterial({
+                size: 0.03,
+                color: 0xDFFF00, // DOIT MATCH LA COULEUR CSS
+                transparent: true,
+                opacity: 0.8,
+            });
+
+            const particles = new THREE.Points(geometry, material);
+            scene.add(particles);
+
+            // Geometric shape
+            const geoMesh = new THREE.IcosahedronGeometry(2.5, 0);
+            const matMesh = new THREE.MeshBasicMaterial({
+                color: 0x333333,
+                wireframe: true,
+                transparent: true,
+                opacity: 0.15
+            });
+            const mesh = new THREE.Mesh(geoMesh, matMesh);
+            scene.add(mesh);
+
+            camera.position.z = 5;
+
+            let mouseX = 0;
+            let mouseY = 0;
+
+            document.addEventListener('mousemove', (event) => {
+                mouseX = (event.clientX / window.innerWidth) * 2 - 1;
+                mouseY = -(event.clientY / window.innerHeight) * 2 + 1;
+            });
+
+            // Animation Loop
+            const animate = () => {
+                requestAnimationFrame(animate);
+
+                // Rotate based on time + mouse interaction
+                particles.rotation.y += 0.001;
+                particles.rotation.x += 0.0005;
+
+                // Subtle mouse parallax
+                particles.rotation.y += mouseX * 0.005;
+                particles.rotation.x -= mouseY * 0.005;
+
+                mesh.rotation.x -= 0.002;
+                mesh.rotation.y -= 0.002;
+
+                // Float effect for mesh
+                mesh.position.y = Math.sin(Date.now() * 0.001) * 0.2;
+
+                renderer.render(scene, camera);
+            };
+
+            animate();
+
+            window.addEventListener('resize', () => {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            });
+        };
+
+        // Lancer ThreeJS seulement si la librairie est chargée
+        if (typeof THREE !== 'undefined') {
+            initThreeJS();
+        }
+
+        // Navbar Scroll Effect
+        window.addEventListener('scroll', () => {
+            const nav = document.getElementById('navbar');
+            if (nav) {
+                if (window.scrollY > 50) {
+                    nav.classList.add('bg-black/80', 'backdrop-blur-md', 'border-b', 'border-gray-800');
+                } else {
+                    nav.classList.remove('bg-black/80', 'backdrop-blur-md', 'border-b', 'border-gray-800');
+                }
+            }
+        });
+    </script>
+</body>
+
+</html>
